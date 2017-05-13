@@ -23,13 +23,13 @@ Builder.load_string("""
     canvas.before:
         Rectangle:
             pos: 0, 0
-            size: 700, 480
+            size: 800, 480
             source: 'Images/BG.png'
             
     Button:
         text: 'Navigation'
         id: NAV
-        pos: 20, 10
+        pos: 70, 10
         size_hint: None, None
         size: 150, 40
         background_color: (0.5, 0.0, 0.0, 0.5)
@@ -38,7 +38,7 @@ Builder.load_string("""
     Button:
         text: 'Weather'
         id: WEATH
-        pos: 190, 10
+        pos: 240, 10
         size_hint: None, None
         size: 150, 40
         background_color: (0.5, 0.0, 0.0, 0.5)
@@ -47,7 +47,7 @@ Builder.load_string("""
     Button:
         text: 'Camera'
         id: CAM
-        pos: 360, 10
+        pos: 410, 10
         size_hint: None, None
         size: 150, 40
         background_color: (0.5, 0.0, 0.0, 0.5)
@@ -56,7 +56,7 @@ Builder.load_string("""
     Button:
         text: 'Engine Data'
         id: ENG
-        pos: 530, 10
+        pos: 580, 10
         size_hint: None, None
         size: 150, 40
         background_color: (0.5, 0.0, 0.0, 0.5)
@@ -65,7 +65,7 @@ Builder.load_string("""
     Button: 
         text: 'Exit'
         id: EXT
-        pos: 590, 430
+        pos: 690, 430
         size_hint: None, None
         size: 100, 40
         background_color: (0.9, 0.0, 0.0, 0.75)
@@ -85,13 +85,13 @@ Builder.load_string("""
     canvas.before:
         Rectangle:
             pos: 0, 0
-            size: 700, 480
+            size: 800, 480
             source: 'Images/BG_Empty.png'
             
     Button: 
         text: 'Exit'
         id: EXT
-        pos: 590, 430
+        pos: 690, 430
         size_hint: None, None
         size: 100, 40
         background_color: (0.9, 0.0, 0.0, 0.75)
@@ -111,25 +111,25 @@ Builder.load_string("""
     canvas.before:
         Rectangle:
             pos: 0, 0
-            size: 700, 480
+            size: 800, 480
             source: 'Images/BG_Empty.png'
             
     canvas:
         Rectangle:
             pos: 10, 10
-            size: 680, 415
+            size: 780, 415
             source: 'Images/Navigation_Example.png'
             
     TextInput:
         text: 'Destination'
         pos: 130, 430
         size_hint: None, None
-        size: 400, 40
+        size: 500, 40
         
     Button: 
         text: '->'
         id: EXT
-        pos: 530, 430
+        pos: 630, 430
         size_hint: None, None
         size: 40, 40
         background_color: (0.0, 0.9, 0.0, 0.75)
@@ -139,7 +139,7 @@ Builder.load_string("""
     Button: 
         text: 'Exit'
         id: EXT
-        pos: 590, 430
+        pos: 690, 430
         size_hint: None, None
         size: 100, 40
         background_color: (0.9, 0.0, 0.0, 0.75)
@@ -158,19 +158,19 @@ Builder.load_string("""
     canvas.before:
         Rectangle:
             pos: 0, 0
-            size: 700, 480
+            size: 800, 480
             source: 'Images/BG_Empty.png'
     
     canvas:
         Rectangle:
             pos: 10, 70
-            size: 680, 345
+            size: 780, 345
             source: 'Images/Weather_Example.png'
   
     Button: 
         text: 'Exit'
         id: EXT
-        pos: 590, 430
+        pos: 690, 430
         size_hint: None, None
         size: 100, 40
         background_color: (0.9, 0.0, 0.0, 0.75)
@@ -189,12 +189,12 @@ Builder.load_string("""
         text: 'Location'
         pos: 130, 430
         size_hint: None, None
-        size: 400, 40
+        size: 500, 40
         
     Button: 
         text: '->'
         id: EXT
-        pos: 530, 430
+        pos: 630, 430
         size_hint: None, None
         size: 40, 40
         background_color: (0.0, 0.9, 0.0, 0.75)   
@@ -215,19 +215,19 @@ Builder.load_string("""
     canvas.before:
         Rectangle:
             pos: 0, 0
-            size: 700, 480
+            size: 800, 480
             source: 'Images/BG_Empty.png'
             
     canvas:
         Rectangle:
             pos: 10, 10
-            size: 680, 415
+            size: 780, 415
             source: 'Images/Camera_Example.png'
     
     Button: 
         text: 'Capture Image'
         id: CPT_I
-        pos: 180, 430
+        pos: 230, 430
         size_hint: None, None
         size: 110, 40
         background_color: (0.1, 0.1, 0.1, 0.75)
@@ -235,7 +235,7 @@ Builder.load_string("""
     Button: 
         text: 'Capture Video'
         id: CPT_V
-        pos: 300, 430
+        pos: 350, 430
         size_hint: None, None
         size: 110, 40
         background_color: (0.1, 0.1, 0.1, 0.75)
@@ -243,7 +243,7 @@ Builder.load_string("""
     Button: 
         text: 'Timelapse'
         id: CPT_TL
-        pos: 420, 430
+        pos: 470, 430
         size_hint: None, None
         size: 110, 40
         background_color: (0.1, 0.1, 0.1, 0.75)
@@ -252,7 +252,7 @@ Builder.load_string("""
     Button: 
         text: 'Exit'
         id: EXT
-        pos: 590, 430
+        pos: 690, 430
         size_hint: None, None
         size: 100, 40
         background_color: (0.9, 0.0, 0.0, 0.75)
@@ -271,13 +271,13 @@ Builder.load_string("""
     canvas.before:
         Rectangle:
             pos: 0, 0
-            size: 700, 480
+            size: 800, 480
             source: 'Images/BG_Empty.png'
             
     Button: 
         text: 'Exit'
         id: EXT
-        pos: 590, 430
+        pos: 690, 430
         size_hint: None, None
         size: 100, 40
         background_color: (0.9, 0.0, 0.0, 0.75)
