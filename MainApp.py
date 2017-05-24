@@ -14,322 +14,881 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.config import Config
 from kivy.lang import Builder
+from kivy.properties import ObjectProperty  #@UnresolvedImport
+from kivy.uix.textinput import TextInput
+from kivy.uix.image import Image
+from kivy.uix.image import AsyncImage
+from kivy.uix.button import Button
+from kivy.uix.togglebutton import ToggleButton
+from kivy.uix.label import Label
+from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
+from kivy.garden.mapview import MapView, MapMarker  #@UnresolvedImport
+from KivyCalendar import CalendarWidget
+
+from uuid import uuid4
+
+import time
+import sys
+from threading import Thread
+import webview
+#from weather import Weather
+from kivy.core.window import Window
+
+import geocoder
+import pyowm
 
 
+"""
+    INITIALIZATION FUNCTIONS
+"""
 
-Builder.load_string("""
-<MenuScreen>:
-    canvas.before:
-        Rectangle:
-            pos: 0, 0
-            size: 800, 480
-            source: 'Images/BG.png'
-            
-    Button:
-        text: 'Navigation'
-        id: NAV
-        pos: 70, 10
-        size_hint: None, None
-        size: 150, 40
-        background_color: (0.5, 0.0, 0.0, 0.5)
-        on_press: root.manager.current = 'nav'
+def configureGraphics():
+    """
+    Configure all Graphics Options
+    """
+    Config.set('graphics', 'fullscreen', 'fake')
+    Config.set('graphics', 'width', '800')
+    Config.set('graphics', 'height', '480')
+    Config.set('graphics', 'resizable', '0')
+    Config.set('graphics', 'position', 'custom')
+    Config.set('graphics', 'left', '1900')
+    Config.set('graphics', 'top', '100')
 
-    Button:
-        text: 'Weather'
-        id: WEATH
-        pos: 240, 10
-        size_hint: None, None
-        size: 150, 40
-        background_color: (0.5, 0.0, 0.0, 0.5)
-        on_press: root.manager.current = 'wth'
+def initScreenManager():
     
-    Button:
-        text: 'Camera'
-        id: CAM
-        pos: 410, 10
-        size_hint: None, None
-        size: 150, 40
-        background_color: (0.5, 0.0, 0.0, 0.5)
-        on_press: root.manager.current = 'cam'
+    """
+    Handle Screen Manager
+    """
+    global sm
+    sm = ScreenManager(transition=FadeTransition())
+    sm.add_widget(MenuScreen(name='menu'))
+    sm.add_widget(MenuScreen2(name='menu2'))
+    sm.add_widget(SettingsScreen(name='set'))
+    sm.add_widget(NavigationScreen(name='nav'))
+    sm.add_widget(WeatherScreen(name='wth'))
+    sm.add_widget(CameraScreen(name='cam'))
+    sm.add_widget(EngineScreen(name='eng'))
+    sm.add_widget(MessagingScreen(name='msg'))
+    sm.add_widget(CalendarScreen(name='cldr'))
+    sm.add_widget(SportsScreen(name='sprts'))
+    sm.add_widget(TasksScreen(name='tsks'))
+
+    sm.current = 'menu'
     
-    Button:
-        text: 'Engine Data'
-        id: ENG
-        pos: 580, 10
-        size_hint: None, None
-        size: 150, 40
-        background_color: (0.5, 0.0, 0.0, 0.5)
-        on_press: root.manager.current = 'eng'
-        
-    Button: 
-        text: 'Exit'
-        id: EXT
-        pos: 690, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.9, 0.0, 0.0, 0.75)
-        on_press: app.stop()
-
-    Button: 
-        text: 'Settings'
-        id: STG
-        pos: 10, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.18, 0.38, 0.70, 0.75)
-        on_press: root.manager.current = 'set'
-
-
-<SettingsScreen>:
-    canvas.before:
-        Rectangle:
-            pos: 0, 0
-            size: 800, 480
-            source: 'Images/BG_Empty.png'
-            
-    Button: 
-        text: 'Exit'
-        id: EXT
-        pos: 690, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.9, 0.0, 0.0, 0.75)
-        on_press: app.stop()
-
-    Button: 
-        text: 'Back'
-        id: STG
-        pos: 10, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.18, 0.38, 0.70, 0.75)
-        on_press: root.manager.current = 'menu'   
-
-
-<NavigationScreen>:
-    canvas.before:
-        Rectangle:
-            pos: 0, 0
-            size: 800, 480
-            source: 'Images/BG_Empty.png'
-            
-    canvas:
-        Rectangle:
-            pos: 10, 10
-            size: 780, 415
-            source: 'Images/Navigation_Example.png'
-            
-    TextInput:
-        text: 'Destination'
-        pos: 130, 430
-        size_hint: None, None
-        size: 500, 40
-        
-    Button: 
-        text: '->'
-        id: EXT
-        pos: 630, 430
-        size_hint: None, None
-        size: 40, 40
-        background_color: (0.0, 0.9, 0.0, 0.75)
-        
-        
-            
-    Button: 
-        text: 'Exit'
-        id: EXT
-        pos: 690, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.9, 0.0, 0.0, 0.75)
-        on_press: app.stop()
-
-    Button: 
-        text: 'Back'
-        id: STG
-        pos: 10, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.18, 0.38, 0.70, 0.75)
-        on_press: root.manager.current = 'menu' 
-        
-<WeatherScreen>:
-    canvas.before:
-        Rectangle:
-            pos: 0, 0
-            size: 800, 480
-            source: 'Images/BG_Empty.png'
     
-    canvas:
-        Rectangle:
-            pos: 10, 70
-            size: 780, 345
-            source: 'Images/Weather_Example.png'
-  
-    Button: 
-        text: 'Exit'
-        id: EXT
-        pos: 690, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.9, 0.0, 0.0, 0.75)
-        on_press: app.stop()
 
-    Button: 
-        text: 'Back'
-        id: STG
-        pos: 10, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.18, 0.38, 0.70, 0.75)
-        on_press: root.manager.current = 'menu' 
-        
-    TextInput:
-        text: 'Location'
-        pos: 130, 430
-        size_hint: None, None
-        size: 500, 40
-        
-    Button: 
-        text: '->'
-        id: EXT
-        pos: 630, 430
-        size_hint: None, None
-        size: 40, 40
-        background_color: (0.0, 0.9, 0.0, 0.75)   
-        
-    Label:
-        text: '[b][size=32][color=000000] Buffalo, NY [/color][/size][/b]'
-        markup: True
-        pos: 0, -200
-        
-        
-    Label:
-        text: '[b][size=12][color=000000] [ May 12 2017 - May 21 2017 ] [/color][/size][/b]'
-        markup: True
-        pos: 0, -225
-        
-        
-<CameraScreen>:
-    canvas.before:
-        Rectangle:
-            pos: 0, 0
-            size: 800, 480
-            source: 'Images/BG_Empty.png'
-            
-    canvas:
-        Rectangle:
-            pos: 10, 10
-            size: 780, 415
-            source: 'Images/Camera_Example.png'
-    
-    Button: 
-        text: 'Capture Image'
-        id: CPT_I
-        pos: 230, 430
-        size_hint: None, None
-        size: 110, 40
-        background_color: (0.1, 0.1, 0.1, 0.75)
-    
-    Button: 
-        text: 'Capture Video'
-        id: CPT_V
-        pos: 350, 430
-        size_hint: None, None
-        size: 110, 40
-        background_color: (0.1, 0.1, 0.1, 0.75)
-    
-    Button: 
-        text: 'Timelapse'
-        id: CPT_TL
-        pos: 470, 430
-        size_hint: None, None
-        size: 110, 40
-        background_color: (0.1, 0.1, 0.1, 0.75)
-          
-            
-    Button: 
-        text: 'Exit'
-        id: EXT
-        pos: 690, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.9, 0.0, 0.0, 0.75)
-        on_press: app.stop()
-
-    Button: 
-        text: 'Back'
-        id: STG
-        pos: 10, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.18, 0.38, 0.70, 0.75)
-        on_press: root.manager.current = 'menu' 
-        
-<EngineScreen>:
-    canvas.before:
-        Rectangle:
-            pos: 0, 0
-            size: 800, 480
-            source: 'Images/BG_Empty.png'
-            
-    Button: 
-        text: 'Exit'
-        id: EXT
-        pos: 690, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.9, 0.0, 0.0, 0.75)
-        on_press: app.stop()
-
-    Button: 
-        text: 'Back'
-        id: STG
-        pos: 10, 430
-        size_hint: None, None
-        size: 100, 40
-        background_color: (0.18, 0.38, 0.70, 0.75)
-        on_press: root.manager.current = 'menu' 
-        
-""")
-
+"""
+    KIVY MENU-SCREEN CLASSES
+"""
 
 class MenuScreen(Screen):
-    pass
+    
+    def __init__(self, **kwargs):
+        super(MenuScreen, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.BackButton = Button(text='<',
+                                 pos=(10, 10),
+                                 size_hint=(None, None),
+                                 size=(65, 40),
+                                 background_color=(0.5, 0.5, 0.5, 0.5))
+        
+        self.ForwardButton = Button(text='>',
+                                 pos=(725, 10),
+                                 size_hint=(None, None),
+                                 size=(65, 40),
+                                 background_color=(0.5, 0.5, 0.5, 0.5))
+        self.ForwardButton.bind(on_press=self.openMenu2Screen)
+        
+        self.SettingsButton = Button(text='Settings',
+                                     pos=(10, 430),
+                                     size_hint=(None, None),
+                                     size=(100, 40),
+                                     background_color=(0.18, 0.38, 0.70, 0.75))
+        self.SettingsButton.bind(on_press=self.openSettingsScreen)
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.NavigationButton = Button(text='Navigation',
+                                       pos=(85, 10),
+                                       size_hint=(None, None),
+                                       size=(150, 40),
+                                       background_color=(0.5, 0.0, 0.0, 0.5))
+        self.NavigationButton.bind(on_press=self.openNavigationScreen)
+        
+        self.WeatherButton = Button(text='Weather',
+                                    pos=(245, 10),
+                                    size_hint=(None, None),
+                                    size=(150, 40),
+                                    background_color=(0.5, 0.5, 0.5, 0.5))
+        self.WeatherButton.bind(on_press=self.openWeatherScreen)
+        
+        self.CameraButton = Button(text='Camera',
+                                    pos=(405, 10),
+                                    size_hint=(None, None),
+                                    size=(150, 40),
+                                    background_color=(0.5, 0.5, 0.5, 0.5))
+        self.CameraButton.bind(on_press=self.openCameraScreen)
+        
+        self.EngineButton = Button(text='Engine Data',
+                                    pos=(565, 10),
+                                    size_hint=(None, None),
+                                    size=(150, 40),
+                                    background_color=(0.5, 0.5, 0.5, 0.5))
+        self.EngineButton.bind(on_press=self.openEngineScreen)
+        
+        
+        
+        # Add all components to the screen
+        self.add_widget(self.Background)
+        self.add_widget(self.BackButton)
+        self.add_widget(self.ForwardButton)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.NavigationButton)
+        self.add_widget(self.WeatherButton)
+        self.add_widget(self.CameraButton)
+        self.add_widget(self.EngineButton)
+        self.add_widget(self.SettingsButton)
+
+
+    def exitApplication(self, *args):
+        App.get_running_app().stop()    
+        
+    def openMenu2Screen(self, *args):
+        sm.current = 'menu2'
+    
+    def openNavigationScreen(self, *args):
+        sm.current = 'nav'
+        
+    def openWeatherScreen(self, *args):
+        sm.current = 'wth'
+        
+    def openCameraScreen(self, *args):
+        sm.current = 'cam'
+        
+    def openEngineScreen(self, *args):
+        sm.current = 'eng'
+        
+    def openSettingsScreen(self, *args):
+        sm.current = 'set'
+
+class MenuScreen2(Screen):
+    
+    def __init__(self, **kwargs):
+        super(MenuScreen2, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.SettingsButton = Button(text='Settings',
+                                 pos=(10, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.SettingsButton.bind(on_press=self.openSettingsScreen)
+        
+        self.BackButton = Button(text='<',
+                                 pos=(10, 10),
+                                 size_hint=(None, None),
+                                 size=(65, 40),
+                                 background_color=(0.5, 0.5, 0.5, 0.5))
+        self.BackButton.bind(on_press=self.openMenuScreen)
+        
+        self.ForwardButton = Button(text='',
+                                 pos=(725, 10),
+                                 size_hint=(None, None),
+                                 size=(65, 40),
+                                 background_color=(0.5, 0.5, 0.5, 0.5))
+        
+        self.MessagingButton = Button(text='Messaging',
+                                      pos=(85, 10),
+                                      size_hint=(None, None),
+                                      size=(150, 40),
+                                      background_color=(0.5, 0.0, 0.0, 0.5))
+        self.MessagingButton.bind(on_press=self.openMessagingScreen)
+        
+        self.CalendarButton = Button(text='Calendar',
+                                      pos=(245, 10),
+                                      size_hint=(None, None),
+                                      size=(150, 40),
+                                      background_color=(0.5, 0.0, 0.0, 0.5))
+        self.CalendarButton.bind(on_press=self.openCalendarScreen)
+        
+        self.SportsButton = Button(text='Sports',
+                                   pos=(405, 10),
+                                   size_hint=(None, None),
+                                   size=(150, 40),
+                                   background_color=(0.5, 0.0, 0.0, 0.5))
+        self.SportsButton.bind(on_press=self.openSportsScreen)
+        
+        self.TasksButton = Button(text='Tasks',
+                                   pos=(565, 10),
+                                   size_hint=(None, None),
+                                   size=(150, 40),
+                                   background_color=(0.5, 0.0, 0.0, 0.5))
+        self.TasksButton.bind(on_press=self.openTasksScreen)
+        
+        
+        
+        # Add all components to the Screen
+        self.add_widget(self.Background )
+        self.add_widget(self.ExitButton )
+        self.add_widget(self.SettingsButton )
+        self.add_widget(self.BackButton )
+        self.add_widget(self.ForwardButton )
+        self.add_widget(self.MessagingButton )
+        self.add_widget(self.CalendarButton )
+        self.add_widget(self.SportsButton )
+        self.add_widget(self.TasksButton )
+
+    def exitApplication(self, *args):
+        App.get_running_app().stop()
+        
+    def openSettingsScreen(self, *args):
+        sm.current = 'set'    
+        
+    def openMenuScreen(self, *args):
+        sm.current = 'menu'
+        
+    def openMessagingScreen(self, *args):
+        sm.current = 'msg'
+        
+    def openCalendarScreen(self, *args):
+        sm.current = 'cldr'
+        
+    def openSportsScreen(self, *args):
+        sm.current = 'sprts'
+        
+    def openTasksScreen(self, *args):
+        sm.current = 'tsks'
 
 class SettingsScreen(Screen):
-    pass
+    
+    def __init__(self, **kwargs):
+        super(SettingsScreen, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG_Empty.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.BackButton = Button(text='Back',
+                                 pos=(10, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.BackButton.bind(on_press=self.BackToMenu)
 
+        # Add all components to Screen
+        self.add_widget(self.Background)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.BackButton)
+        
+    def exitApplication(self, *args):
+        App.get_running_app().stop()  
+       
+    def BackToMenu(self, *args):
+        sm.current = 'menu'
+
+
+"""
+    MENU 1: SCREEN CLASSES
+"""        
 class NavigationScreen(Screen):
-    pass
+    
+    def __init__(self, **kwargs):
+        super(NavigationScreen, self).__init__(**kwargs)
+        
+        #self.size=(800, 480)
+        
+        self.Background = Image(source='Images/BG_Empty.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        
+        self.Map = MapView(zoom=1,
+                           lat=42.8982149,
+                           lon=-78.8672276,
+                           pos=(10, 10),
+                           size_hint=(None, None),
+                           size=(780, 415))
+        
+        
+        self.Destination = TextInput(text='Destination',
+                                     multiline=False,
+                                     pos=(130, 430),
+                                     size_hint=(None, None),
+                                     size=(500, 40))
+        self.Destination.bind(on_text_validate=self.SearchDestination)
+        self.Destination.bind(on_double_tap=self.ClearDestination)
+        
 
+        self.SearchButton = Button(text='->',
+                                   pos=(630, 430),
+                                   size_hint=(None, None),
+                                   size=(40, 40),
+                                   background_color=(0.0, 0.9, 0.0, 0.75))
+        self.SearchButton.bind(on_press=self.SearchDestination)
+        
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color= (0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication) 
+        
+        
+        self.BackButton = Button(text='Back',
+                                 pos=(10, 430),
+                                 size_hint= (None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.BackButton.bind(on_press= self.BackToMenu)
+        
+        
+        self.ZoomInButton = Button(text='+',
+                                   pos=(10,50),
+                                   size_hint=(None, None),
+                                   size=(40, 40),
+                                   background_color=(0, 0, 0.90, 1))
+        self.ZoomInButton.bind(on_press= self.ZoomIn)
+        
+        
+        self.ZoomOutButton = Button(text='-',
+                                   pos=(10,10),
+                                   size_hint=(None, None),
+                                   size=(40, 40),
+                                   background_color=(0, 0, 0.90, 1))
+        self.ZoomOutButton.bind(on_press= self.ZoomOut)
+        
+        self.GetLocationButton = Button(text='(@)',
+                                        pos=(50, 10),
+                                        size_hint=(None, None),
+                                        size=(40, 40),
+                                        background_color=(0, 0, 0.90, 1))
+        self.GetLocationButton.bind(on_press= self.ZoomToCurrentLocation)
+        
+        self.PlaceNewMarkerButton = Button(text='^',
+                                           pos=(90,10),
+                                           size_hint=(None, None),
+                                           size=(40, 40),
+                                           background_color=(0, 0, 0.90, 1))
+        self.PlaceNewMarkerButton.bind(on_press= self.PlaceMarker)
+        
+        
+        #POPUP ERRORS
+        self.popup_location_error = Popup(title='Location Error',
+                                          content=Label(text='-Invalid location- \n Please try again!'),
+                                          size_hint=(None, None), size=(500, 100))
+        
+        self.popup_bluetooth_error = Popup(title='Bluetooth Error',
+                                          content=Label(text='-Could not connect to ODBII Device- \n Please Reconnect and try again!'),
+                                          size_hint=(None, None), size=(500, 100))
+        
+        self.popup_gps_error = Popup(title='GPS Error',
+                                          content=Label(text='-Invalid location- \n Please try again!'),
+                                          size_hint=(None, None), size=(500, 100))
+        
+        
+        
+        #LOCATION DATA
+        self.MyCurrentLocation = (42.8982149, -78.8672276)
+        self.PlaceNewMarker = False
+        #Add location lock for synchronization 
+        
+        
+        #MAP MARKERS LIST
+        self.MapMarkers = []
+        
+        
+        #Add Objects to the Screen
+        self.add_widget(self.Background)
+        self.add_widget(self.Map)
+        self.add_widget(self.Destination)
+        self.add_widget(self.SearchButton)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.BackButton)
+        self.add_widget(self.ZoomInButton)
+        self.add_widget(self.ZoomOutButton)
+        self.add_widget(self.GetLocationButton)
+        self.add_widget(self.PlaceNewMarkerButton)                           
+
+    def BackToMenu(self, *args):
+        sm.current = 'menu'
+        
+    def exitApplication(self, *args):
+        App.get_running_app().stop() 
+        
+    def PlaceMarker(self, *args):
+        x = self.Map.width/2
+        y = self.Map.height/2
+        newLoc = self.Map.get_latlon_at(x,y)
+        CurMarker = MapMarker(lat=newLoc[0], lon=newLoc[1])
+        self.MapMarkers.append(CurMarker)
+        self.Map.add_marker(CurMarker)
+        
+    
+    def SearchDestination(self, *args):
+        location_text = self.Destination.text
+        g = geocoder.google(location_text)
+        if(g.status=='OK'):
+            print(g.json)
+            print(g.latlng)
+            self.Map.center_on(g.latlng[0],g.latlng[1])
+            self.Destination.text = ''
+            self.Map.zoom = 16
+            self.ClearAllMapMarkers()
+            CurMarker = MapMarker(lat=g.latlng[0], lon=g.latlng[1])
+            self.MapMarkers.append(CurMarker)
+            self.Map.add_marker(CurMarker)
+            #self.SetPlaceText(g)
+        
+        else:
+            self.popup_location_error.open()
+    
+    def ClearDestination(self, *args):
+        self.Destination.text = ''  
+        
+    def ClearAllMapMarkers(self, *args):
+        for marker in self.MapMarkers:
+            self.Map.remove_marker(marker)
+        
+    def ZoomOut(self, *args):
+        if(self.Map.zoom>0):
+            self.Map.zoom-=1
+            print('Map Zoom Level: ' + str(self.Map.zoom))
+        
+    def ZoomIn(self, *args):
+        if(self.Map.zoom<19):
+            self.Map.zoom+=1
+            print('Map Zoom Level: ' + str(self.Map.zoom))
+            
+    def ZoomToCurrentLocation(self, *args):
+        newloc = self.MyCurrentLocation
+        self.Map.center_on(newloc[0],newloc[1])
+        self.ClearAllMapMarkers()
+        self.Map.zoom = 16
+        CurMarker = MapMarker(lat=newloc[0], lon=newloc[1])
+        self.MapMarkers.append(CurMarker)
+        self.Map.add_marker(CurMarker)
+                
+    def GetCurrentLocation(self, *args):
+        #Define Mechanism to grab GPS coordinates from USB device
+        lat = 42.8982149
+        lon = -78.8672276
+        #AQUIRE LOCK WHEN IMPLEMENTED
+        self.MyCurrentLocation = (lat, lon)
+        #RELEASE LOCK
+        #ERASE LAST MARKER
+        #ADD NEW MARKER
+        print(self.MyCurrentLocation)
+                
 class WeatherScreen(Screen):
-    pass
-
+    
+    def __init__(self, **kwargs):
+        super(WeatherScreen, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG_Empty.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.WeatherImage = Image(source='Images/Weather_Example.png',
+                                  pos=(10, 70),
+                                  size_hint=(None, None),
+                                  size=(780, 345))
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.BackButton = Button(text='Back',
+                                 pos=(10, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.BackButton.bind(on_press=self.BackToMenu)
+        
+        self.Location = TextInput(text='Location',
+                                  multiline=False,
+                                  pos=(130, 430),
+                                  size_hint=(None, None),
+                                  size=(500,40))
+        self.Location.bind(on_double_tap=self.ClearLocation)
+        self.Location.bind(on_text_validate=self.SearchLocation)
+        
+        self.SearchButton = Button(text='->',
+                                   pos=(630, 430),
+                                   size_hint=(None, None),
+                                   size=(65, 40),
+                                   background_color=(0.0, 0.9, 0.0, 0.75))
+        self.SearchButton.bind(on_press=self.SearchLocation)
+        
+        self.LocationText = Label(text='[b][size=32][color=000000] Buffalo, NY [/color][/size][/b]',
+                                  markup=True,
+                                  pos=(0, -200))
+        
+        self.DateRangeText = Label(text='[b][size=12][color=000000] [ May 12 2017 - May 21 2017 ] [/color][/size][/b]',
+                                   markup=True,
+                                   pos=(0, -225))
+        
+        
+        #MY API KEY
+        #Must replace in git repo
+        self.control = pyowm.OWM('a2a355015a6ec9a5abf8f6ccb11fbb50')
+        
+        
+        # ADD ALL COMPONENTS TO SCREEN
+        self.add_widget(self.Background)
+        self.add_widget(self.WeatherImage)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.BackButton)
+        self.add_widget(self.Location)
+        self.add_widget(self.SearchButton)
+        self.add_widget(self.LocationText)
+        self.add_widget(self.DateRangeText)
+    
+    def exitApplication(self, *args):
+        App.get_running_app().stop() 
+               
+    def ClearLocation(self, *args):
+        self.Location.text=''
+        
+    def SearchLocation(self, *args):
+        print(self.control.daily_forecast(self.Location.text))
+    
+    def SetDefaultLocation(self, *args):
+        pass
+        
+    def BackToMenu(self, *args):
+        sm.current = 'menu'
+                   
+    def Search(self):
+        print(self.location.text)
+               
 class CameraScreen(Screen):
-    pass
-
+    
+    def __init__(self, **kwargs):
+        super(CameraScreen, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG_Empty.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.CameraImage = AsyncImage(source='http://www.thruway.ny.gov/webcams/captures/img4ni00144n.jpg?%s.jpg' % uuid4().hex,
+                                  pos=(10, 10),
+                                  allow_stretch=True,
+                                  nocache=True,
+                                  size_hint=(None, None),
+                                  size=(780, 415))
+        
+        self.CaptureImageButton = Button(text='Capture Image',
+                                    pos=(130, 430),
+                                    size_hint=(None, None),
+                                    size=(110, 40),
+                                    background_color=(0.1, 0.1, 0.1, 0.75))
+        self.CaptureImageButton.bind(on_press=self.CaptureImage)
+        
+        self.CaptureVideoButton = Button(text='Capture Video',
+                                    pos=(250, 430),
+                                    size_hint=(None, None),
+                                    size=(110, 40),
+                                    background_color=(0.1, 0.1, 0.1, 0.75))
+        self.CaptureVideoButton.bind(on_press=self.CaptureVideo)
+        
+        self.CaptureTimelapseButton = Button(text='Capture Timelapse',
+                                    pos=(370, 430),
+                                    size_hint=(None, None),
+                                    size=(110, 40),
+                                    background_color=(0.1, 0.1, 0.1, 0.75))
+        self.CaptureTimelapseButton.bind(on_press=self.CaptureTimelapse)
+        
+        self.LiveButton = ToggleButton(text='LIVE',
+                                    pos=(490, 430),
+                                    size_hint=(None, None),
+                                    size=(110, 40),
+                                    background_color=(0.1, 0.1, 0.1, 0.75))
+        self.LiveButton.bind(on_press=self.StartCam)
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.BackButton = Button(text='Back',
+                                 pos=(10, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.BackButton.bind(on_press=self.BackToMenu)
+        
+        
+        #CAMERA CONTROL VARIABLES
+        self.CameraStarted = False
+        self.UpdateThread = Thread(target=self.CamUpdate)
+        
+        # Add all Components to Screen
+        self.add_widget(self.Background)
+        self.add_widget(self.CameraImage)
+        self.add_widget(self.CaptureImageButton)
+        self.add_widget(self.CaptureVideoButton)
+        self.add_widget(self.CaptureTimelapseButton)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.BackButton)
+        self.add_widget(self.LiveButton)
+    
+    def exitApplication(self, *args):
+        App.get_running_app().stop() 
+        
+    def BackToMenu(self, *args):
+        sm.current = 'menu'    
+    
+    def StartCam(self, *args):
+        #source = 'https://i.ytimg.com/vi/rRlHBeg7KoU/maxresdefault.jpg'
+        #print(source)
+        self.CameraStarted = not self.CameraStarted
+        
+        if(self.CameraStarted == True and not self.UpdateThread.isAlive()):
+            self.UpdateThread.start()
+        
+        
+    def CaptureImage(self, *args):
+        pass
+    
+    def CaptureVideo(self, *args):
+        pass
+        
+    def CaptureTimelapse(self, *args):
+        pass
+        
+    def CamUpdate(self):
+        while True:
+            if(self.CameraStarted):
+                self.CameraImage.reload()
+                #print('RELOADED')
+                time.sleep(4)
+             
 class EngineScreen(Screen):
-    pass
+    
+    def __init__(self, **kwargs):
+        super(EngineScreen, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG_Empty.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.BackButton = Button(text='Back',
+                                 pos=(10, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.BackButton.bind(on_press=self.BackToMenu)
+
+        # Add all components to Screen
+        self.add_widget(self.Background)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.BackButton)
+    
+    def exitApplication(self, *args):
+        App.get_running_app().stop() 
+        
+    def BackToMenu(self, *args):
+        sm.current = 'menu'  
+
+           
+"""
+    MENU 2: SCREEN CLASSES
+"""           
+class MessagingScreen(Screen):
+    def __init__(self, **kwargs):
+        super(MessagingScreen, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG_Empty.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.BackButton = Button(text='Back',
+                                 pos=(10, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.BackButton.bind(on_press=self.BackToMenu)
+
+        # Add all components to Screen
+        self.add_widget(self.Background)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.BackButton)
+       
+    def exitApplication(self, *args):
+        App.get_running_app().stop() 
+       
+    def BackToMenu(self, *args):
+        sm.current = 'menu2'     
+
+class CalendarScreen(Screen):
+
+    def __init__(self, **kwargs):
+        super(CalendarScreen, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG_Empty.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.BackButton = Button(text='Back',
+                                 pos=(10, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.BackButton.bind(on_press=self.BackToMenu)
+        
+        self.CalendarView = CalendarWidget(pos=(20, 20),
+                                           size_hint=(None, None),
+                                           size=(300,300))
+
+        # Add all components to Screen
+        self.add_widget(self.Background)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.BackButton)
+        self.add_widget(self.CalendarView)
+       
+    def exitApplication(self, *args):
+        App.get_running_app().stop() 
+    
+    def BackToMenu(self, *args):
+        sm.current = 'menu2'  
+        
+class SportsScreen(Screen):
+
+    def __init__(self, **kwargs):
+        super(SportsScreen, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG_Empty.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.BackButton = Button(text='Back',
+                                 pos=(10, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.BackButton.bind(on_press=self.BackToMenu)
+
+        # Add all components to Screen
+        self.add_widget(self.Background)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.BackButton)
+       
+    def exitApplication(self, *args):
+        App.get_running_app().stop() 
+        
+    def BackToMenu(self, *args):
+        sm.current = 'menu2'  
+               
+class TasksScreen(Screen):
+    
+    def __init__(self, **kwargs):
+        super(TasksScreen, self).__init__(**kwargs)
+        
+        self.Background = Image(source='Images/BG_Empty.png',
+                                pos=(0, 0),
+                                size_hint=(None, None),
+                                size=(800, 480))
+        
+        self.ExitButton = Button(text='Exit',
+                                 pos=(690, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.9, 0.0, 0.0, 0.75))
+        self.ExitButton.bind(on_press=self.exitApplication)
+        
+        self.BackButton = Button(text='Back',
+                                 pos=(10, 430),
+                                 size_hint=(None, None),
+                                 size=(100, 40),
+                                 background_color=(0.18, 0.38, 0.70, 0.75))
+        self.BackButton.bind(on_press=self.BackToMenu)
+
+        # Add all components to Screen
+        self.add_widget(self.Background)
+        self.add_widget(self.ExitButton)
+        self.add_widget(self.BackButton)
+       
+    def exitApplication(self, *args):
+        App.get_running_app().stop()    
+    
+    def BackToMenu(self, *args):
+        sm.current = 'menu2'  
 
 
-Config.set('graphics', 'width', '700')
-Config.set('graphics', 'height', '480')
-
-
-# Create the screen manager
-sm = ScreenManager(transition=FadeTransition())
-
-sm.add_widget(MenuScreen(name='menu'))
-sm.add_widget(SettingsScreen(name='set'))
-sm.add_widget(NavigationScreen(name='nav'))
-sm.add_widget(WeatherScreen(name='wth'))
-sm.add_widget(CameraScreen(name='cam'))
-sm.add_widget(EngineScreen(name='eng'))
-
-sm.current = 'menu'
-
+"""
+    MAIN APPLICATION
+"""
 
 class AutoApp(App):
     def build(self):
@@ -337,4 +896,7 @@ class AutoApp(App):
 
 
 if __name__ == '__main__':
+    configureGraphics()
+    initScreenManager()
     AutoApp().run()
+    
