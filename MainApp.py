@@ -12,7 +12,7 @@
 
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.config import Config
+
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty  #@UnresolvedImport
 from kivy.uix.textinput import TextInput
@@ -22,9 +22,13 @@ from kivy.uix.button import Button
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.checkbox import CheckBox
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.garden.mapview import MapView, MapMarker  #@UnresolvedImport
 from KivyCalendar import CalendarWidget
+import pickle
 
 from uuid import uuid4
 
@@ -32,28 +36,34 @@ import time
 import sys
 from threading import Thread
 import webview
-#from weather import Weather
+from weather import Weather
 from kivy.core.window import Window
+from kivy.clock import Clock
 
 import geocoder
 import pyowm
 
+from functools import partial
+import os.path
+from kivy.config import Config
+
+Config.set('graphics','borderless',1)
+Config.set('graphics', 'resizable', '0')
+Config.set('graphics', 'position', 'custom')
+Config.set('graphics', 'left', '1900')
+Config.set('graphics', 'top', '100')
+
+from kivy.core.window import Window
+Window.size = (800, 480)
+Window.top = 100
+Window.left = 1900
+#Window.rotation = 180
 
 """
     INITIALIZATION FUNCTIONS
 """
 
-def configureGraphics():
-    """
-    Configure all Graphics Options
-    """
-    Config.set('graphics', 'fullscreen', 'fake')
-    Config.set('graphics', 'width', '800')
-    Config.set('graphics', 'height', '480')
-    Config.set('graphics', 'resizable', '0')
-    Config.set('graphics', 'position', 'custom')
-    Config.set('graphics', 'left', '1900')
-    Config.set('graphics', 'top', '100')
+
 
 def initScreenManager():
     
@@ -92,7 +102,7 @@ class MenuScreen(Screen):
                                 size_hint=(None, None),
                                 size=(800, 480))
         
-        self.BackButton = Button(text='<',
+        self.BackButton = Button(text='',
                                  pos=(10, 10),
                                  size_hint=(None, None),
                                  size=(65, 40),
@@ -130,21 +140,21 @@ class MenuScreen(Screen):
                                     pos=(245, 10),
                                     size_hint=(None, None),
                                     size=(150, 40),
-                                    background_color=(0.5, 0.5, 0.5, 0.5))
+                                    background_color=(0.5, 0.0, 0.0, 0.5))
         self.WeatherButton.bind(on_press=self.openWeatherScreen)
         
         self.CameraButton = Button(text='Camera',
                                     pos=(405, 10),
                                     size_hint=(None, None),
                                     size=(150, 40),
-                                    background_color=(0.5, 0.5, 0.5, 0.5))
+                                    background_color=(0.5, 0.0, 0.0, 0.5))
         self.CameraButton.bind(on_press=self.openCameraScreen)
         
         self.EngineButton = Button(text='Engine Data',
                                     pos=(565, 10),
                                     size_hint=(None, None),
                                     size=(150, 40),
-                                    background_color=(0.5, 0.5, 0.5, 0.5))
+                                    background_color=(0.5, 0.0, 0.0, 0.5))
         self.EngineButton.bind(on_press=self.openEngineScreen)
         
         
@@ -159,7 +169,6 @@ class MenuScreen(Screen):
         self.add_widget(self.CameraButton)
         self.add_widget(self.EngineButton)
         self.add_widget(self.SettingsButton)
-
 
     def exitApplication(self, *args):
         App.get_running_app().stop()    
@@ -551,7 +560,7 @@ class WeatherScreen(Screen):
         self.SearchButton = Button(text='->',
                                    pos=(630, 430),
                                    size_hint=(None, None),
-                                   size=(65, 40),
+                                   size=(40, 40),
                                    background_color=(0.0, 0.9, 0.0, 0.75))
         self.SearchButton.bind(on_press=self.SearchLocation)
         
@@ -635,7 +644,7 @@ class CameraScreen(Screen):
                                     background_color=(0.1, 0.1, 0.1, 0.75))
         self.CaptureTimelapseButton.bind(on_press=self.CaptureTimelapse)
         
-        self.LiveButton = ToggleButton(text='LIVE',
+        self.LiveButton = ToggleButton(text='IMAGE',
                                     pos=(490, 430),
                                     size_hint=(None, None),
                                     size=(110, 40),
@@ -659,7 +668,8 @@ class CameraScreen(Screen):
         
         #CAMERA CONTROL VARIABLES
         self.CameraStarted = False
-        self.UpdateThread = Thread(target=self.CamUpdate)
+        #self.UpdateThread = Thread(target=self.CamUpdate)
+        self.CameraUpdateEvent = None
         
         # Add all Components to Screen
         self.add_widget(self.Background)
@@ -682,9 +692,18 @@ class CameraScreen(Screen):
         #print(source)
         self.CameraStarted = not self.CameraStarted
         
+        """
         if(self.CameraStarted == True and not self.UpdateThread.isAlive()):
             self.UpdateThread.start()
+        """
         
+        if(self.CameraStarted == True):
+            self.LiveButton.text='LIVE'
+            self.CameraUpdateEvent = Clock.schedule_interval(self.CamUpdate,4)
+            
+        else:
+            self.LiveButton.text='IMAGE'
+            self.CameraUpdateEvent.cancel()
         
     def CaptureImage(self, *args):
         pass
@@ -695,12 +714,11 @@ class CameraScreen(Screen):
     def CaptureTimelapse(self, *args):
         pass
         
-    def CamUpdate(self):
-        while True:
-            if(self.CameraStarted):
-                self.CameraImage.reload()
-                #print('RELOADED')
-                time.sleep(4)
+    def CamUpdate(self, *args):
+        if(self.CameraStarted):
+            self.CameraImage.reload()
+            #print('RELOADED')
+            #time.sleep(4)
              
 class EngineScreen(Screen):
     
@@ -780,7 +798,7 @@ class CalendarScreen(Screen):
     def __init__(self, **kwargs):
         super(CalendarScreen, self).__init__(**kwargs)
         
-        self.Background = Image(source='Images/BG_Empty.png',
+        self.Background = Image(source='Images/BG_Empty_Dark.png',
                                 pos=(0, 0),
                                 size_hint=(None, None),
                                 size=(800, 480))
@@ -799,22 +817,110 @@ class CalendarScreen(Screen):
                                  background_color=(0.18, 0.38, 0.70, 0.75))
         self.BackButton.bind(on_press=self.BackToMenu)
         
+        
+        self.NewEvent = Button(text='New Event',
+                               pos=(240, 430),
+                               size_hint=(None, None),
+                               size=(100, 40),
+                               background_color=(0.75, 0.75, 0.75, 1))
+        
+        
+        self.DeleteEvent = Button(text='Delete Event',
+                               pos=(350, 430),
+                               size_hint=(None, None),
+                               size=(100, 40),
+                               background_color=(0.75, 0.75, 0.75, 1))
+        
+        
+        self.SyncEvents = Button(text='Sync Calendar',
+                               pos=(460, 430),
+                               size_hint=(None, None),
+                               size=(100, 40),
+                               background_color=(0.75, 0.75, 0.75, 1))
+        
+        
+        
+        
         self.CalendarView = CalendarWidget(pos=(20, 20),
                                            size_hint=(None, None),
-                                           size=(300,300))
+                                           size=(400,400))
 
+        self.EventView = ScrollView(pos=(440, 20), 
+                                    size_hint=(None, None), 
+                                    size=(350, 350))
+        
+        self.CurrentDateLabel = Label(text='[size=16] Wednesday May 24th, 2017 [/size]',
+                                      pos=(215,160),
+                                      markup=True)
+        
+        
+        self.Events = CalendarEvents()
+        self.Events.bind(minimum_height=self.Events.setter('height'))
+        self.EventView.add_widget(self.Events)
+        
+        
         # Add all components to Screen
         self.add_widget(self.Background)
         self.add_widget(self.ExitButton)
         self.add_widget(self.BackButton)
         self.add_widget(self.CalendarView)
+        self.add_widget(self.EventView)
+        self.add_widget(self.CurrentDateLabel)
+        self.add_widget(self.NewEvent)
+        self.add_widget(self.DeleteEvent)
+        self.add_widget(self.SyncEvents)
+        
+        
+        
        
     def exitApplication(self, *args):
         App.get_running_app().stop() 
     
     def BackToMenu(self, *args):
         sm.current = 'menu2'  
+
+class CalendarEvents(GridLayout):
+    
+    def __init__(self, **kwargs):
+        super(CalendarEvents, self).__init__(**kwargs)
         
+        
+        self.size_hint_y=None
+        self.cols=2
+        self.row_default_height = '30dp'
+        self.row_force_default = True
+        self.spacing = (0, 0)
+        self.padding = (0, 0)
+        
+        
+        self.TimeDic = {}
+        
+
+        cur_time = Button(text='DAY', size_hint_x=None, width=80)
+        cur_event = Label(text='-')
+        
+        self.TimeDic['DAY']= cur_event
+        
+        self.add_widget(cur_time)
+        self.add_widget(cur_event)
+            
+        for n in range(18):
+            Time1 = str(6+n)+':00'
+            Time2 = str(6+n)+':30'
+            
+            cur_time_1 = Button(text=Time1, size_hint_x=None, width=80)
+            cur_event_1 = Label(text='-')
+            cur_time_2 = Button(text=Time2, size_hint_x=None, width=80 )
+            cur_event_2= Label(text='-')
+        
+            self.TimeDic[Time1] = cur_event_1
+            self.TimeDic[Time2] = cur_event_2
+        
+            self.add_widget(cur_time_1)
+            self.add_widget(cur_event_1)
+            self.add_widget(cur_time_2)
+            self.add_widget(cur_event_2)
+                 
 class SportsScreen(Screen):
 
     def __init__(self, **kwargs):
@@ -855,7 +961,7 @@ class TasksScreen(Screen):
     def __init__(self, **kwargs):
         super(TasksScreen, self).__init__(**kwargs)
         
-        self.Background = Image(source='Images/BG_Empty.png',
+        self.Background = Image(source='Images/BG_Empty_Dark.png',
                                 pos=(0, 0),
                                 size_hint=(None, None),
                                 size=(800, 480))
@@ -873,18 +979,229 @@ class TasksScreen(Screen):
                                  size=(100, 40),
                                  background_color=(0.18, 0.38, 0.70, 0.75))
         self.BackButton.bind(on_press=self.BackToMenu)
+        
+        
+        self.newTaskText = TextInput(text='New Task',
+                                     multiline=False,
+                                     pos=(130, 430),
+                                     size_hint=(None, None),
+                                     size=(500, 40))
+        self.newTaskText.bind(on_text_validate=self.addNewTask)
+        self.newTaskText.bind(on_double_tap=self.clearTaskText)
+        
+
+        self.addButton = Button(text='+',
+                                   pos=(630, 430),
+                                   size_hint=(None, None),
+                                   size=(40, 40),
+                                   background_color=(0.0, 0.9, 0.0, 0.75))
+        self.addButton.bind(on_press=self.addNewTask)
+        
+        
+        
+        self.TaskViewActive = ScrollView(pos=(20, 20), 
+                                    size_hint=(None, None), 
+                                    size=(350, 350))
+        
+        self.TaskViewComplete = ScrollView(pos=(420, 20), 
+                                    size_hint=(None, None), 
+                                    size=(350, 350))
+        
+        self.ActiveLabel = Label(text='[size=22] ACTIVE [/size]',
+                                 markup=True,
+                                 pos=(-200, 150))
+        
+        self.CompleteLabel = Label(text='[size=22] COMPLETE [/size]',
+                                 markup=True,
+                                 pos=(200, 150))
+        
+        self.TaskActive = ActiveTasks()
+        self.TaskActive.bind(minimum_height=self.TaskActive.setter('height'))
+        self.TaskViewActive.add_widget(self.TaskActive)
+        
+        self.TaskComplete = CompleteTasks()
+        self.TaskComplete.bind(minimum_height=self.TaskComplete.setter('height'))
+        self.TaskViewComplete.add_widget(self.TaskComplete)
+        
+        self.TaskActive.setCompleteTaskRef(self.TaskComplete)
+        self.TaskComplete.setActiveTaskRef(self.TaskActive)
+        
+    
 
         # Add all components to Screen
         self.add_widget(self.Background)
         self.add_widget(self.ExitButton)
         self.add_widget(self.BackButton)
+        self.add_widget(self.TaskViewActive)
+        self.add_widget(self.TaskViewComplete)
+        self.add_widget(self.ActiveLabel)
+        self.add_widget(self.CompleteLabel)
+        self.add_widget(self.newTaskText)
+        self.add_widget(self.addButton)
        
     def exitApplication(self, *args):
         App.get_running_app().stop()    
     
     def BackToMenu(self, *args):
         sm.current = 'menu2'  
+        
+    def addNewTask(self, *args):
+        if(self.newTaskText.text.strip() != ''):
+            self.TaskActive.addTaskAndSave(self.newTaskText.text)
+        self.newTaskText.text=''
+        self.newTaskText.select_all()
+           
+    def clearTaskText(self, *args):
+        self.newTaskText.text=''
 
+class ActiveTasks(GridLayout):
+    
+    def __init__(self, **kwargs):
+        super(ActiveTasks, self).__init__(**kwargs)
+        
+        self.size_hint_y=None
+        self.cols=3
+        self.row_default_height = '30dp'
+        self.row_force_default = True
+        self.spacing = (0, 0)
+        self.padding = (0, 0)
+        
+        self.TaskDic = {}
+        
+        self.CompleteTaskRef = None
+        
+        self.loadActiveTasks()
+    
+    def loadActiveTasks(self):
+        if(os.path.isfile("Pickles/ActiveTasks.p")):
+            with open('Pickles/ActiveTasks.p', 'rb') as handle:
+                task_list = pickle.load(handle)
+            
+                for stringvalue in task_list:
+                    self.addTask(stringvalue)
+    
+    def saveActiveTasks(self):
+        with open('Pickles/ActiveTasks.p', 'wb') as handle:
+            pickle.dump(list(self.TaskDic.keys()), handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    def setCompleteTaskRef(self, Complete):
+        self.CompleteTaskRef = Complete
+        
+    def addTaskAndSave(self, tasktext):
+        self.addTask(tasktext)
+        self.saveActiveTasks()
+        
+    def addTask(self, tasktext):
+        check = CheckBox(size_hint_x=None, width=30)
+        check.bind(active=partial(self.completeTask, tasktext))
+        
+        task = TextInput(text=tasktext, multiline=True)
+        #task.do_cursor_movement('cursor_home',control=True, alt=False)
+        
+        delete = Button(text='X', size_hint_x=None, width=30)
+        delete.bind(on_press=partial(self.removeTask, tasktext))
+        
+        if(tasktext not in self.TaskDic):
+            self.TaskDic[tasktext]=[check, task, delete]
+        
+            self.add_widget(check)
+            self.add_widget(task)
+            self.add_widget(delete)
+    
+
+    def removeTask(self, *args):
+        #print('Trying to remove task: ' + args[0])
+        widgets= self.TaskDic[args[0]]
+        self.TaskDic.pop(args[0])
+        self.remove_widget(widgets[0])
+        self.remove_widget(widgets[1])
+        self.remove_widget(widgets[2])
+        
+        self.saveActiveTasks()
+                
+    def completeTask(self, *args):
+        #print('Trying to complete task: ' + args[0])
+        widgets= self.TaskDic[args[0]]
+        self.TaskDic.pop(args[0])
+        self.CompleteTaskRef.addTaskAndSave(widgets[1].text)
+        self.remove_widget(widgets[0])
+        self.remove_widget(widgets[1])
+        self.remove_widget(widgets[2])
+        
+        self.saveActiveTasks()
+    
+class CompleteTasks(GridLayout):
+    
+    def __init__(self, **kwargs):
+        super(CompleteTasks, self).__init__(**kwargs)
+        
+        self.size_hint_y=None
+        self.cols=3
+        self.row_default_height = '30dp'
+        self.row_force_default = True
+        self.spacing = (0, 0)
+        self.padding = (0, 0)
+        
+        self.TaskDic = {}
+        
+        self.ActiveTaskRef = None
+        
+        self.loadCompleteTasks()
+        
+    def loadCompleteTasks(self):
+        if(os.path.isfile("Pickles/CompleteTasks.p")):
+            with open('Pickles/CompleteTasks.p', 'rb') as handle:
+                task_list = pickle.load(handle)
+            
+                for stringvalue in task_list:
+                    self.addTask(stringvalue)
+    
+    def saveCompleteTasks(self):
+        with open('Pickles/CompleteTasks.p', 'wb') as handle:
+            pickle.dump(list(self.TaskDic.keys()), handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    def setActiveTaskRef(self, Active):
+        self.ActiveTaskRef = Active
+    
+    def addTaskAndSave(self, tasktext):
+        self.addTask(tasktext)
+        self.saveCompleteTasks()
+        
+    def addTask(self, tasktext):
+        check = CheckBox(size_hint_x=None, width=30, active=True)
+        check.bind(active=partial(self.reactivateTask, tasktext))
+        
+        task = TextInput(text=tasktext, multiline=True)
+        #task.do_cursor_movement('cursor_home',control=True, alt=False)
+        task.disabled=True
+        
+        delete = Button(text='X', size_hint_x=None, width=30)
+        delete.bind(on_press=partial(self.removeTask, tasktext))
+        
+        self.TaskDic[tasktext]=[check, task, delete]
+        
+        self.add_widget(check)
+        self.add_widget(task)
+        self.add_widget(delete)
+
+        
+    def removeTask(self, *args):
+        #print('Trying to remove task: ' + args[0])
+        widgets= self.TaskDic[args[0]]
+        self.TaskDic.pop(args[0])
+        self.remove_widget(widgets[0])
+        self.remove_widget(widgets[1])
+        self.remove_widget(widgets[2])
+        self.saveCompleteTasks()
+        
+    def reactivateTask(self, *args):
+        widgets= self.TaskDic[args[0]]
+        self.TaskDic.pop(args[0])
+        self.ActiveTaskRef.addTaskAndSave(args[0])
+        self.remove_widget(widgets[0])
+        self.remove_widget(widgets[1])
+        self.remove_widget(widgets[2])
+        self.saveCompleteTasks()
 
 """
     MAIN APPLICATION
@@ -896,7 +1213,7 @@ class AutoApp(App):
 
 
 if __name__ == '__main__':
-    configureGraphics()
+    #configureGraphics()
     initScreenManager()
     AutoApp().run()
     
